@@ -1,0 +1,32 @@
+/* print.css */
+body {
+    font-size: 12pt; /* Adjust font size as needed */
+}
+
+.wrapper-content { 
+    width: auto;
+    margin: 0; /* Remove default margins */
+}
+
+.ibox {
+    page-break-inside: avoid; /* Prevent table from splitting across pages */
+}
+
+.row {
+    width: 100%; /* Ensure rows fit the page width */
+}
+
+/* Hide elements not needed in print */
+#print-button, .text-muted, .article-title img {
+    display: none;
+}
+
+/* Optional: Adjust margins if needed */
+@page {
+    margin: 1cm; /* Example margin */
+}
+
+/* print.css */
+.container { width: 100%; margin: 0; padding: 1cm; } /* Adjust margins as needed */
+.print-button { display: none; }
+

@@ -5,7 +5,7 @@ if (!isset($_SESSION['matric_no'])) {
     exit();
 }
 
-include 'connect.php'; // include your database connection file
+include 'connect.php';
 
 $matric_no = $_SESSION['matric_no'];
 
@@ -119,7 +119,8 @@ $result = $stmt->get_result();
                     </div>
                 </div>
                 <div>
-                    <a href="index.php" class="btn btn-secondary">Back</a>
+                    <a href="index.php" class="btn btn-secondary">Back</a> <br>
+                    <a href="ticket.php" target="_blank">Print Booking Tickets</a>
                 </div>
             </div>
             <div class="footer">

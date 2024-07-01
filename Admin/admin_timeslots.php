@@ -184,43 +184,6 @@ $timeslots = $conn->query($sql);
                     </div>
                 </div>
 
-                <div class="row">
-                    <div class="card card-primary">
-                        <div class="card-header">
-                            <h3 class="card-title">Existing Timeslots</h3>
-                        </div>
-                        <div class="card-body">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Session Date</th>
-                                        <th>Start Time</th>
-                                        <th>End Time</th>
-                                        <th>Max Students</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php while ($row = $timeslots->fetch_assoc()) { ?>
-                                    <tr>
-                                        <td><?php echo $row['session_date']; ?></td>
-                                        <td><?php echo $row['start_time']; ?></td>
-                                        <td><?php echo $row['end_time']; ?></td>
-                                        <td><?php echo $row['max_students']; ?></td>
-                                        <td>
-                                            <form action="" method="post" style="display:inline-block;">
-                                                <input type="hidden" name="timeslot_id" value="<?php echo $row['id']; ?>">
-                                                <button type="submit" name="deleteTimeslot" class="btn btn-danger btn-sm">Delete</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    <?php } ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
                 <?php if (!empty($_SESSION['success'])) { ?>
                 <div class="popup popup--icon -success js_success-popup popup--visible">
                     <div class="popup__background"></div>

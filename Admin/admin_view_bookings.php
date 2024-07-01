@@ -1,7 +1,14 @@
 <?php
 session_start();
-error_reporting(0);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 include('../connect.php');
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
 
 if (strlen($_SESSION['admin-username']) == "") {
     header("Location: login.php");
@@ -12,18 +19,60 @@ $username = $_SESSION['admin-username'];
 date_default_timezone_set('Africa/Nairobi');
 $current_date = date('Y-m-d H:i:s');
 
-$sql = "select * from admin where username='$username'";
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete'])) {
+    $timeslot_id = $_POST['timeslot_id'];
+
+    // Begin a transaction
+    $conn->begin_transaction();
+
+    try {
+        // Delete associated bookings
+        $delete_bookings_sql = "DELETE FROM bookings WHERE timeslot_id = ?";
+        $stmt = $conn->prepare($delete_bookings_sql);
+        $stmt->bind_param('i', $timeslot_id);
+        $stmt->execute();
+        $stmt->close();
+
+        // Delete the timeslot
+        $delete_timeslot_sql = "DELETE FROM timeslots WHERE id = ?";
+        $stmt = $conn->prepare($delete_timeslot_sql);
+        $stmt->bind_param('i', $timeslot_id);
+        $stmt->execute();
+        $stmt->close();
+
+        // Commit the transaction
+        $conn->commit();
+
+        $_SESSION['success'] = "Session deleted successfully.";
+    } catch (mysqli_sql_exception $exception) {
+        // Rollback the transaction if there was an error
+        $conn->rollback();
+        $_SESSION['error'] = "Error deleting session: " . $exception->getMessage();
+    }
+
+    header("Location: admin_view_bookings.php");
+    exit();
+}
+
+
+
+$sql = "SELECT * FROM admin WHERE username='$username'";
 $result = $conn->query($sql);
+if (!$result) {
+    die("Query failed: " . $conn->error);
+}
 $row1 = mysqli_fetch_array($result);
 
-$sql = "SELECT * FROM bookings";
-$bookings = $conn->query($sql);
-$sql = "SELECT t.id, t.session_date, t.start_time, t.end_time, t.max_students, COUNT(b.id) as bookings_count
+$sql = "SELECT t.id, t.session_date, t.start_time, t.end_time, t.max_students, COUNT(b.id) as bookings_count, GROUP_CONCAT(s.fullname ORDER BY b.id) as student_names
         FROM timeslots t
         LEFT JOIN bookings b ON t.id = b.timeslot_id
-        GROUP BY t.id";
+        LEFT JOIN students s ON b.matric_no = s.matric_no
+        GROUP BY t.id
+        ORDER BY bookings_count DESC";
 $result = $conn->query($sql);
-
+if (!$result) {
+    die("Query failed: " . $conn->error);
+}
 ?>
 
 <!DOCTYPE html>
@@ -132,25 +181,41 @@ $result = $conn->query($sql);
                                         <th>End Time</th>
                                         <th>Max Students</th>
                                         <th>Bookings</th>
+                                        <th>Student Names</th>
+                                        <th>Delete</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while ($row = $result->fetch_assoc()) { ?>
-                                    <tr>
-                                        <td><?php echo $row['session_date']; ?></td>
-                                        <td><?php echo $row['start_time']; ?></td>
-                                        <td><?php echo $row['end_time']; ?></td>
-                                        <td><?php echo $row['max_students']; ?></td>
-                                        <td><?php echo $row['bookings_count']; ?></td>
-                                    </tr>
-                                    <?php } ?>
-                                </tbody>
+                                    <?php
+                                        if ($result->num_rows > 0) {
+                                    while ($row = $result->fetch_assoc()) {
+                                    echo "<tr>
+                  <td>{$row['session_date']}</td>
+                  <td>{$row['start_time']}</td>
+                  <td>{$row['end_time']}</td>
+                  <td>{$row['max_students']}</td>
+                  <td>{$row['bookings_count']}</td>
+                  <td>{$row['student_names']}</td>
+                  <td>
+                      <form method='POST' action=''>
+                          <input type='hidden' name='timeslot_id' value='{$row['id']}'>
+                          <button type='submit' name='delete' class='btn btn-danger'>Delete</button>
+                      </form>
+                  </td>
+                  </tr>";
+        }
+    } else {
+        echo "<tr><td colspan='7'>No bookings found</td></tr>";
+    }
+    ?>
+</tbody>
+
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <?php if(!empty($_SESSION['success'])) { ?>
+                <?php if (!empty($_SESSION['success'])) { ?>
                 <div class="popup popup--icon -success js_success-popup popup--visible">
                     <div class="popup__background"></div>
                     <div class="popup__content">
@@ -163,7 +228,7 @@ $result = $conn->query($sql);
                 </div>
                 <?php unset($_SESSION["success"]); } ?>
 
-                <?php if(!empty($_SESSION['error'])) { ?>
+                <?php if (!empty($_SESSION['error'])) { ?>
                 <div class="popup popup--icon -error js_error-popup popup--visible">
                     <div class="popup__background"></div>
                     <div class="popup__content">
